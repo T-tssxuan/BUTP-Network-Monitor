@@ -36,6 +36,13 @@ function getLocalIPs(callback) {
     }, function onerror() {});
 }
 
+/**
+ * Prepare for login the account manage system.
+ * @Param:
+ *  info: get the session cookie and checkcode.
+ * @Return:
+ *  none.
+ */
 function getCookieAndCheckcode(info) {
 	// remove the request cookie, for get the fresh cookie
 	chrome.webRequest.onBeforeSendHeaders.addListener(function(details) {
@@ -67,15 +74,13 @@ function getCookieAndCheckcode(info) {
 	{urls: ["http://gwself.bupt.edu.cn/nav_login"]},
 	["responseHeaders"]);
 
+    // set the request session cookie which got previous.
 	chrome.webRequest.onBeforeSendHeaders.addListener(function(details) {
 		var headers = details.requestHeaders;
 		var blockingResponse = {};
 		for( var i = 0, l = headers.length; i < l; ++i ) {
 			if( headers[i].name == 'Cookie' ) {
-                console.log("#########################");
-                console.log(info);
                 headers[i].value = info[0];
-                console.log("########################");
                 break;
 			}
 		}
@@ -85,33 +90,34 @@ function getCookieAndCheckcode(info) {
 	{urls: ["http://gwself.bupt.edu.cn/RandomCodeAction*"]},
 	['requestHeaders', "blocking"]);
 
-	console.log("after add addListener");
+    // request the account manage login page
 	var xhr = new XMLHttpRequest();
 	xhr.open("get", "http://gwself.bupt.edu.cn/nav_login");
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
-            console.log("the cookie is");
+            // extract the checkcode which need to provide when login
             var checkcode = /"\d{4}"/g.exec(xhr.responseText)
                 .toString().substring(1, 5);
             info[1] = checkcode;
-            console.log("**************************************");
-            console.log(checkcode);
-            console.log("=======================================");
-            console.log(xhr.getResponseHeader("Cookie"));
-            console.log("---------------------------------------");
-            console.log(xhr.getAllResponseHeaders());
+            // request the radomcode, this url must be request before login
             var img = new XMLHttpRequest();
             img.open("GET", "http://gwself.bupt.edu.cn/RandomCodeAction.action?randomNum=" + Math.random());
             img.send();
         }
     }
 	xhr.send();
-
-    return info;
 }
 
-
+/**
+ * Login the account manage system.
+ * @Param:
+ *  info: provide the session cookie and checkcode.
+ *  user_info: provide user id and password.
+ * @Return:
+ *  none.
+ */
 function login(info, user_info) {
+    // initial the header for login
     chrome.webRequest.onBeforeSendHeaders.addListener(function(details) {
         var headers = details.requestHeaders;
         var blockingResponse = {};
@@ -126,59 +132,48 @@ function login(info, user_info) {
         }
         headers.push({name: "Cache-Control", value: "max-age=0"});
         headers.push({name: "Referer", value: "http://gwself.bupt.edu.cn/nav_login"});
-        console.log(headers);
         blockingResponse.requestHeaders = headers;
         return blockingResponse;
     },
     {urls: ["http://gwself.bupt.edu.cn/LoginAction.action"]},
     ['requestHeaders', "blocking"]);
 
-	chrome.webRequest.onHeadersReceived.addListener(function( details ) {
-		console.log(details);
-		details.responseHeaders.forEach(function(ele) {
-			if (ele.name == "Set-Cookie") {
-				var JSESSIONID = ele.value.substring(0, ele.value.indexOf(";"));
-				console.log("+++++++++my Cookie: " + JSESSIONID);
-			}
-		});
-		return {responseHeaders:details.responseHeaders};
-	},
-	{urls: ["http://gwself.bupt.edu.cn/LoginAction.action"]},
-	["responseHeaders"]);
-
+    // login the account manage system
     var xhr = new XMLHttpRequest();
     xhr.open("post", "http://gwself.bupt.edu.cn/LoginAction.action");
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
-            console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^");
-            console.log(xhr.responseText);
             var str = xhr.responseText.replace(/(?:\r\n|\r|\n|\t)/g, "");
+            // check whether login successful
             if (str.search("登 录") == -1) {
                 info[2] = true;
             } else {
                 var html = '<div class="item"> Login Error </div>';
                 document.getElementById("terminals").innerHTML = html;
             }
-            console.log(xhr.getAllResponseHeaders());
-            console.log("^^^^^^^^^^^^^^^^^^^^^^^^^^");
         }
     }
     var pwd = calcMD5(user_info["password"]);
     data = "account=" + user_info["id"];
     data += "&password=" + pwd + "&code=&checkcode=" + info[1] + "&Submit=%E7%99%BB+%E5%BD%95";
-    console.log("--------------->: " + data);
     xhr.send(data);
 }
 
+/** 
+ * Make a terminal off line.
+ * @Param:
+ *  tag: the tag of the terminal need to log off.
+ * @Return:
+ *  none.
+ */
 function tooffline(tag){
     var url = "http://gwself.bupt.edu.cn/tooffline?t=" + Math.random();
     url += "&fldsessionid=" + tag;
-    console.log("!!!!!!!!!!!!!!!!!!!!!!!" + url + "!!!!!!!!!!!!!!!!!");
+    // add the session cookie for the request
     chrome.webRequest.onBeforeSendHeaders.addListener(function(details) {
         var headers = details.requestHeaders;
         var blockingResponse = {};
-        console.log(headers);
         for( var i = 0, l = headers.length; i < l; ++i ) {
             if( headers[i].name == 'Cookie' ) {
                 headers[i].value = Cookie;
@@ -191,40 +186,42 @@ function tooffline(tag){
     {urls: [url]},
     ["requestHeaders", "blocking"]);
 
+    // turn off the terminal.
     var xhr = new XMLHttpRequest();
     xhr.open("GET", url);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
-            console.log("===============log off==================");
-            console.log(xhr.responseText);
-            console.log("===============log off==================");
-        }
-    }   
     xhr.send();
 }
 
+// record the global session cookie and checkcode, and account manage system
+// login state.
 var log_info = ["", "", false, 0];
+
+/**
+ * Get the terminal information of the account
+ * @Param:
+ *  user_info: provide user id and password
+ */
 function getTerminalInfo(user_info) {
-    console.log(log_info);
+    // prepare for login
     if (!log_info[2]) {
         getCookieAndCheckcode(log_info);
     }
+    // waiting for the session cookie and other thing prepared.
     setTimeout(function() {
+        // login account manage system.
         if (!log_info[2] && log_info[3] < 3) {
             login(log_info, user_info);
             log_info[3] ++;
-            console.log("after login");
         }
+        // get terminal information
         setTimeout(function() {
             if (!log_info[2]) {
                 return;
             }
             var xhr = new XMLHttpRequest();
-            console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%");
             xhr.open("GET", "http://gwself.bupt.edu.cn/nav_offLine");
             xhr.onreadystatechange = function() {
                 if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
-                    console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
                     var content = xhr.responseText.replace(/(?:\r\n|\r|\n|\t)/g, "");
                     var str = /<tbody>.*<\/tbody>/g.exec(content);
                     if (str.length != 0) {
@@ -239,8 +236,8 @@ function getTerminalInfo(user_info) {
                         for (var i = 0; i < tags.length; i++ ) {
                             tags[i] = /\d+/g.exec(tags[i])[0];
                         }
-                        console.log(ips);
                         var html = "";
+                        // add terminals information to the panel
                         for (var i = 0; i < ips.length; i ++) {
                             var div = document.createElement("div");
                             div.className = "item";
@@ -261,6 +258,7 @@ function getTerminalInfo(user_info) {
                             logoff.textContent = "log off";
                             logoff.appendChild(hide);
 
+                            // listener of log off manipulation
                             logoff.addEventListener("click", function() {
                                 console.log("++++++++++++++");
                                 tooffline(this.lastChild.textContent);
@@ -273,7 +271,6 @@ function getTerminalInfo(user_info) {
                             term.appendChild(div);
                         };
                     }
-                    console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
                 }
             }
             xhr.send();
@@ -281,7 +278,10 @@ function getTerminalInfo(user_info) {
     }, 500);
 }
 
-function getFlowInfo(url) {
+/**
+ * Get flow information.
+ */
+function getFlowInfo() {
     var xhr = new XMLHttpRequest();
     var url = document.getElementById("gateway").value;
     xhr.open("GET", url);
@@ -289,20 +289,18 @@ function getFlowInfo(url) {
         if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
             var content = xhr.responseText.replace(/(?:\r\n|\r|\n|\t|\s)/g, "");
             var ele = document.getElementById("flow");
+            // check whether login gateway
             if (content.search("欢迎登录北邮校园网络") != -1) {
                 var html = '<div class="item"> Please login gateway! </div>';
                 ele.innerHTML = html;
             } else {
+                // update flow information
                 var tmp = /time=.*?;/g.exec(content);
                 var time = Number(/\d+/g.exec(tmp[0])[0]);
                 var tmp = /flow=.*?;/g.exec(content);
                 var flow = Number(/\d+/g.exec(tmp[0])[0]) / 1024;
                 var tmp = /fee=.*?;/g.exec(content);
                 var fee = Number(/\d+/g.exec(tmp[0])[0]) / 10000;
-
-                console.log("time: " + time);
-                console.log("flow: " + flow);
-                console.log("fee: " + fee);
 
                 ele.innerHTML = "";
                 var html = "";
@@ -323,12 +321,20 @@ function getFlowInfo(url) {
     xhr.send();
 }
 
+/**
+ * Save user information
+ */
 function saveUserInfo(user_info) {
     chrome.storage.sync.set(user_info, function() {
         console.log("--->saved user_info");
     });
 }
 
+/**
+ * Get chrome storged information
+ * @Param:
+ *  user_info: retrive the user information.
+ */
 function getUserInfo(user_info) {
     var arr = ["id", "password", "gateway", "hour_max", "hour_max_switch", "threshold", "threshold_switch"];
     chrome.storage.sync.get(arr, function(info) {
@@ -363,13 +369,17 @@ function getUserInfo(user_info) {
     });
 }
 
+/**
+ * Update flow information and terminal information every 5 seconds
+ * @Param:
+ *  user_info: user information
+ */
 function updateBasicInfo(user_info) {
 	// get flow information
     getFlowInfo();
     if (("id" in user_info) && ("password" in user_info)) {
         getTerminalInfo(user_info);
     }
-    console.log(user_info);
     setTimeout(function() {
         updateBasicInfo(user_info);
     }, 5000);
@@ -391,6 +401,7 @@ window.onload = function() {
     getUserInfo(user_info);
     updateBasicInfo(user_info);
 
+    // listener for save user information operation
     document.getElementById("save").addEventListener("click", function() {
         user_info["id"] = document.getElementById("id").value;
         user_info["password"] = document.getElementById("password").value;
@@ -403,6 +414,7 @@ window.onload = function() {
         saveUserInfo(user_info);
     });
 
+    // listener for login gateway operation
     document.getElementById("login_gateway").addEventListener("click", function() {
         var xhr = new XMLHttpRequest();
         var id = document.getElementById("id").value;

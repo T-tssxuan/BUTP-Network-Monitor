@@ -4,6 +4,11 @@
 
 var Cookie;
 
+/**
+ * Get account manage system session cookie and checkcode
+ * @Param:
+ *  info: record the session cookie and checkcode
+ */
 function getCookieAndCheckcode(info) {
 	// remove the request cookie
 	chrome.webRequest.onBeforeSendHeaders.addListener(function(details) {
@@ -35,6 +40,7 @@ function getCookieAndCheckcode(info) {
 	{urls: ["http://gwself.bupt.edu.cn/nav_login"]},
 	["responseHeaders"]);
 
+    // set the session cookie
 	chrome.webRequest.onBeforeSendHeaders.addListener(function(details) {
 		var headers = details.requestHeaders;
 		var blockingResponse = {};
@@ -67,7 +73,12 @@ function getCookieAndCheckcode(info) {
     return info;
 }
 
-
+/**
+ * Login the account manage system
+ * @Param:
+ *  info: log information
+ *  user_info: user information
+ */
 function login(info, user_info) {
     chrome.webRequest.onBeforeSendHeaders.addListener(function(details) {
         var headers = details.requestHeaders;
@@ -89,23 +100,13 @@ function login(info, user_info) {
     {urls: ["http://gwself.bupt.edu.cn/LoginAction.action"]},
     ['requestHeaders', "blocking"]);
 
-	chrome.webRequest.onHeadersReceived.addListener(function( details ) {
-		details.responseHeaders.forEach(function(ele) {
-			if (ele.name == "Set-Cookie") {
-				var JSESSIONID = ele.value.substring(0, ele.value.indexOf(";"));
-			}
-		});
-		return {responseHeaders:details.responseHeaders};
-	},
-	{urls: ["http://gwself.bupt.edu.cn/LoginAction.action"]},
-	["responseHeaders"]);
-
     var xhr = new XMLHttpRequest();
     xhr.open("post", "http://gwself.bupt.edu.cn/LoginAction.action");
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
             var str = xhr.responseText.replace(/(?:\r\n|\r|\n|\t)/g, "");
+            // check whether login successful
             if (str.search("登 录") == -1) {
                 info[2] = true;
             } else {
@@ -120,6 +121,11 @@ function login(info, user_info) {
     xhr.send(data);
 }
 
+/**
+ * Make a terminal off line.
+ * @Param:
+ *  tag: the tag of the terminal.
+ */
 function tooffline(tag){
     var url = "http://gwself.bupt.edu.cn/tooffline?t=" + Math.random();
     url += "&fldsessionid=" + tag;
@@ -143,7 +149,14 @@ function tooffline(tag){
     xhr.send();
 }
 
+// Record the login information.
 var log_info = ["", "", false, 0];
+
+/**
+ * Log off all terminal.
+ * @Param:
+ *  user_info: the user information
+ */
 function logOffTerminals(user_info) {
     if (!log_info[2]) {
         getCookieAndCheckcode(log_info);
@@ -182,6 +195,11 @@ function logOffTerminals(user_info) {
     }, 500);
 }
 
+/**
+ * Check the flow information and decide the next operation
+ * @Param:
+ *  user_info: the user information
+ */
 function checkFlowInfo(user_info) {
     var xhr = new XMLHttpRequest();
     var url = user_info["gateway"];
@@ -190,17 +208,20 @@ function checkFlowInfo(user_info) {
         if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
             var content = xhr.responseText.replace(/(?:\r\n|\r|\n|\t|\s)/g, "");
             var ele = document.getElementById("flow");
+            // check whether login gateway
             if (content.search("欢迎登录北邮校园网络") != -1) {
                 return;
             } else {
                 var tmp = /flow=.*?;/g.exec(content);
                 var flow = Number(/\d+/g.exec(tmp[0])[0]) / (1024 * 1024);
+                // judge the total flow threshold
                 if (user_info["threshold_switch"]) {
                     var threshold = Number(user_info['threshold']);
                     if (flow > threshold) {
                         logOffTerminals(user_info);
                     }
                 }
+                // judge the hourly flow threshold
                 if (user_info["hour_max_switch"]) {
                     var last_time = Number(user_info["last_time"]);
                     var last_flow = Number(user_info["flow"]);
@@ -227,6 +248,11 @@ function checkFlowInfo(user_info) {
     xhr.send();
 }
 
+/**
+ * Get local user information
+ * @Param:
+ *  user_info: the user information
+ */
 function getUserInfo(user_info) {
     var arr = ["id", "password", "gateway", "hour_max", "hour_max_switch", "threshold", "threshold_switch", "last_time", "flow"];
     chrome.storage.sync.get(arr, function(info) {
@@ -266,6 +292,11 @@ function getUserInfo(user_info) {
     });
 }
 
+/**
+ * Save the user information.
+ * @Param:
+ *  user_info: the user information
+ */
 function saveUserInfo(user_info) {
     chrome.storage.sync.set(user_info, function() {
         console.log("--->saved user_info");
@@ -273,6 +304,8 @@ function saveUserInfo(user_info) {
 }
 
 var user_info = {};
+
+// Run the information check every minute
 setInterval(function() {
     getUserInfo(user_info);
     if ("threshold_switch" in user_info) {
@@ -280,4 +313,4 @@ setInterval(function() {
             checkFlowInfo(user_info);
         }
     }
-}, 5000);
+}, 60000);
