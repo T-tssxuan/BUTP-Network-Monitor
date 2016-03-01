@@ -10,13 +10,14 @@
     },
 
     "background": {
-        "scripts": ["background.js"],
+        "scripts": ["background.js", "md5.js"],
         "persistent": true 
     },
 
     "permissions": [
         "activeTab",
         "alarms",
+        "storage",
         "webRequest",
         "webRequestBlocking",
         "http://*/*"
