@@ -1,0 +1,28 @@
+body {
+  font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+  font-size: 100%;
+  width: 400px;
+}
+.area {
+  width: 100%;
+  height: auto;
+  background-color: #6c94be;
+}
+.area .title {
+  width: 100%;
+}
+.area .content {
+  width: 100%;
+  border: 1px solid black;
+}
+.area .content .item {
+  width: 100%;
+  margin-top: 2px;
+  background-color: #ffff33;
+}
+#terminals a {
+  margin-left: 100px;
+}
+hr {
+  margin: 5px 0px;
+}

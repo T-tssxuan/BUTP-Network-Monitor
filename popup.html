@@ -1,0 +1,102 @@
+<!doctype html>
+<!--
+ This page is shown when the extension button is clicked, because the
+ "browser_action" field in manifest.json contains the "default_popup" key with
+ value "popup.html".
+ -->
+<html>
+  <head>
+    <title>BUPT</title>
+    <meta charset="utf-8" />
+    <link href="popup.css" rel="stylesheet">
+    <script type="text/javascript" src="md5.js"></script>
+    <script type="text/javascript" src="popup.js"></script>
+  </head>
+  <body>
+      <div class="area">
+          <div class="title">
+              Person Info
+          </div>
+          <div class="content">
+              <div class="item">
+                  <label>Student ID: <input type="text" id="id"/> </label>
+              </div>
+              <div class="item">
+                  <label>Password: <input type="password" id="pwd"/> </label>
+              </div>
+              <div class="item">
+                  <label>
+                      Hour Max: <input type="text" id="hour_max"/>GB 
+                      <input type="checkbox" id="hour_max_switch" checked/>
+                  </label>
+              </div>
+              <div class="item">
+                  <label>
+                      Auto Logoff Threshold: <input type="text" id="threshold"/>GB
+                      <input type="checkbox" id="threshold_switch" checked/>
+                  </label>
+              </div>
+              <div class="item">
+                  <button id="delete">Delete</button>
+                  <button id="save">Save</button>
+              </div>
+          </div>
+      </div>
+      <div class="area">
+          <div class="title">
+              Ip information:
+          </div>
+          <div class="content">
+              <div class="item">
+                  IPv4 addr: <span id="ipv4"> </span>
+              </div>
+              <div class="item">
+                  IPv6 addr: <span id="ipv6"> </span>
+              </div>
+          </div>
+      </div>
+      <hr/>
+      <div class="area">
+          <div class="title">
+              Flow information:
+          </div>
+          <div class="content" id="flow">
+              <div class="item">
+                  Realtime flow:
+              </div>
+              <div class="item">
+                  Hour statistic: 
+              </div>
+              <div class="item">
+                  Auto log off threshold:
+              </div>
+          </div>
+      </div>
+      <hr>
+      <div class="area">
+          <div class="title">
+              Terminal:
+          </div>
+          <div class="content" id="terminals">
+              <div class="item">
+                  Name : ip : <a href = "#"> manipulation </a>>
+              </div>
+          </div>
+      </div>
+      <hr/>
+      <div class="area">
+          <div class="title">
+              Shortcut:
+          </div>
+          <div class="content">
+              <div class="item">
+                  <a target="_blank" href="http://bbs.byr.cn">北邮人论坛</a>
+              </div>
+              <div class="item">
+                  <a target="_blank" href="http://bt.byr.cn">北邮人bt</a>
+              </div>
+          </div>
+      </div>
+  </body>
+</html>
+

@@ -1,0 +1,34 @@
+@nice-blue: #5B83AD;
+@light-blue: @nice-blue + #111;
+@nice-yellow: #ffff33;
+@border-color: black;
+body {
+    font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+    font-size: 100%;
+    width: 400px;
+}
+.area {
+    width: 100%;
+    height: auto;
+    background-color: @light-blue;
+    .title {
+        width: 100%;
+    }
+    .content {
+        width: 100%;
+        border: 1px solid @border-color;
+        .item {
+            width: 100%;
+            margin-top: 2px;
+            background-color:@nice-yellow;
+        }
+    }
+}
+
+#terminals a {
+    margin-left: 100px;
+}
+
+hr {
+    margin: 5px 0px;
+}
