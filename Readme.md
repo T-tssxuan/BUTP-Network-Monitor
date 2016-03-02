@@ -31,5 +31,8 @@ BUPT Network Monitor
     <li> 注意：以上所有数据设置后，需要点击save后才会生效</li>
 </ul>
 
+#### 示例
+![示例](./example.png "示例")
+
 #### License
 MIT
