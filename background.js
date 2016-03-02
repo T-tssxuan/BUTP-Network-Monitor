@@ -309,4 +309,4 @@ setInterval(function() {
             checkFlowInfo(user_info);
         }
     }
-}, 60000);
+}, 120000);
