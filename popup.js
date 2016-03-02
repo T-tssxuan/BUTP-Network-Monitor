@@ -1,7 +1,3 @@
-// Copyright (c) 2014 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 var Cookie;
 
 function getLocalIPs(callback) {
@@ -11,14 +7,10 @@ function getLocalIPs(callback) {
         window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
 
     var pc = new RTCPeerConnection({
-        // Don't specify any stun/turn servers, otherwise you will
-        // also find your public IP addresses.
         iceServers: []
     });
-    // Add a media line, this is needed to activate candidate gathering.
     pc.createDataChannel('');
     
-    // onicecandidate is triggered whenever a candidate has been found.
     pc.onicecandidate = function(e) {
         if (!e.candidate) { // Candidate gathering completed.
             pc.close();
